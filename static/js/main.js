@@ -100,9 +100,8 @@ let promptRoomId = () => {
 // connect to websocket
 let openWs = () => {
   if (window["WebSocket"]) {
-    conn = new WebSocket(
-      `ws://${document.location.host}/ws?room=${roomId}&user=${userId}`
-    );
+    let wss = `wss://${document.location.host}/ws?room=${roomId}&user=${userId}`;
+    conn = new WebSocket(wss);
 
     conn.onclose = function () {
       let item = document.createElement("div");
