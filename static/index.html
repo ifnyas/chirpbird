@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>#2 - Chipbird IM</title>
+    <link rel="stylesheet" href="/static/css/main.css" />
+    <script type="text/javascript" src="/static/js/main.js"></script>
+  </head>
+
+  <body>
+    <div id="screen">
+      <div id="main">
+        <div id="mid">
+          <div id="log"></div>
+        </div>
+
+        <div>
+          <form id="form" autocomplete="off">
+            <input id="form-msg" type="text" autofocus />
+            <input class="btn-icon p-12" type="submit" value="&#10148;" />
+          </form>
+        </div>
+
+        <div id="room">
+          <div class="room-child row">
+            <p>
+              Logged in as:
+              <button id="btn-user" class="btn-icon color-black"></button>
+            </p>
+          </div>
+          <div class="room-child row">
+            <p>
+              Room:
+              <button id="btn-room" class="btn-icon">&#9998;</button>
+            </p>
+          </div>
+          <div class="room-child row">
+            <img
+              src="/static/assets/bird.png"
+              width="24px"
+              height="24px"
+              class="m-r-8"
+            />
+            <p>Powered by ChirpBird</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

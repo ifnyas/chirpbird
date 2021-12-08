@@ -1,0 +1,79 @@
+Basically they want to create platform similar like Whatsapp.
+... easy for people to stay connected.
+
+The system needs to be:
+- Capable of delivering message to client instantly through Websocket
+- Capable of delivering text message
+- Capable of hosting P2P & Group chat
+- Horizontally scalable
+- Resilient from failure (since the system will be distributed, there should be tons of potential failures)
+
+Evaluation:
+- System design
+- Project documentation (any docs that help people understand your project better): 
+   + API documentation
+   + Architecture diagram
+   + DB schema
+   + Class diagram
+   + Failure handling documentation
+   + etc...
+- System fail safe strategies
+- Code readibility, cleanliness, & testability
+- UI comfortability (good UX)
+- Deployment strategy (bonus)
+
+Flow:
+1. enter username
+2. create/load room
+3. chat
+
+Req:
+- User can set its username
+- User can create room
+- User can load room
+- User can send string in room
+- User can receive string in room
+- User can send emoji in room *
+- Only user who created the room can invite people *
+- chat is saved on db *
+
+
+DB Schema:
+
+t_log:
+- id
+- table
+- method
+- row        // id of the row
+- creator    // user_id of the creator
+- time
+
+t_user:
+- id
+- email      // unique, can't be changed
+- pass
+- nick
+- avatar
+- is_active
+
+t_room:
+- id
+- name
+- detail
+- pass
+- is_active
+
+t_roommate:
+- id
+- room_id
+- user_id
+- is_admin
+- is_active
+
+t_chat:
+- id
+- room_id
+- user_id
+- content     // support emoji
+- status      // 0: not read, 1: sent, 2: read
+- is_active
