@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -65,12 +64,10 @@ var (
 )
 
 func Init() {
-	/*
-		heroku doesn't support dynamic port
-	*/
-	//getPort()
-	port = os.Getenv("PORT")
+	/* heroku doesn't support dynamic port
+	getPort()
 	wsAltRoute()
+	*/
 	H.Run()
 }
 
@@ -90,6 +87,11 @@ func getPort() {
 		log.Println(err.Error())
 	}
 	port = ":" + strconv.Itoa(freePort)
+	log.Println(port)
+
+	defer func() {
+		port = ":433"
+	}()
 }
 
 func WsProxy() gin.HandlerFunc {
