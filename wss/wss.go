@@ -64,12 +64,14 @@ var (
 )
 
 func Init() {
-	getPort()
-	wsAltRoute()
+	if port == "" {
+		getPort()
+	}
+	createWsRoute()
 	H.Run()
 }
 
-func wsAltRoute() {
+func createWsRoute() {
 	r := gin.Default()
 	r.GET("/ws", func(c *gin.Context) {
 		user := c.Query("user")
@@ -90,7 +92,6 @@ func getPort() {
 func WsProxy() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
-
 		scheme := c.Request.URL.Scheme
 		if scheme == "" {
 			scheme = "http"
