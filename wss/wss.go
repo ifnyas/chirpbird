@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -64,10 +65,12 @@ var (
 )
 
 func Init() {
-	/* heroku doesn't support dynamic port
-	getPort()
-	wsAltRoute()
+	/*
+		heroku doesn't support dynamic port
 	*/
+	//getPort()
+	port = os.Getenv("PORT")
+	wsAltRoute()
 	H.Run()
 }
 
