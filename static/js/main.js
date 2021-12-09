@@ -11,6 +11,10 @@ let lastData = {
 const promptUserMsg = "Sign in as:";
 const promptRoomMsg = "Join room: (blank to create a new one)";
 
+const wsOpenedMsg = "You are connected!";
+const wsClosedMsg = "Connection closed.";
+const wsErrMsg = "Your browser does not support WebSockets.";
+
 window.onload = function () {
   let queryString = window.location.search;
   let params = new URLSearchParams(queryString);
@@ -56,7 +60,7 @@ let nanoid = (t = 21) => {
 };
 
 // append log
-let writeLog = (item) => {
+let appendLog = (item) => {
   let doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
   log.appendChild(item);
   if (doScroll) {
@@ -67,6 +71,11 @@ let writeLog = (item) => {
 // clear log
 let clearLog = () => {
   log.innerHTML = "";
+  lastData = {
+    user: "",
+    time: "",
+    body: "",
+  };
 };
 
 // prompt user
@@ -93,45 +102,7 @@ let promptRoomId = () => {
     document.title = `#${roomId} - ChipBird IM`;
     btnRoom.innerHTML = `&#9998; <b>${roomId}</b>`;
     clearLog();
-    openWs();
-  }
-};
-
-// connect to websocket
-let openWs = () => {
-  if (window["WebSocket"]) {
-    let wss = `wss://${document.location.host}/ws?room=${roomId}&user=${userId}`;
-    conn = new WebSocket(wss);
-
-    conn.onclose = function () {
-      let item = document.createElement("div");
-      item.classList.add("text-align-c");
-      item.innerHTML = "<b>Connection closed.</b>";
-      writeLog(item, log);
-    };
-
-    conn.onmessage = function (evt) {
-      let messages = evt.data.split("\n");
-
-      for (let i = 0; i < messages.length; i++) {
-        let data = JSON.parse(messages[i]);
-        let item = document.createElement("div");
-
-        item.innerHTML =
-          data.time == lastData.time && data.user == lastData.user
-            ? ""
-            : `<br><b>${data.user}</b> ` +
-              `<span class='font-size-s'>${data.time}</span><br>`;
-        item.innerHTML += `${data.body}`;
-
-        lastData = data;
-        writeLog(item);
-      }
-    };
-  } else {
-    let item = document.createElement("div");
-    item.innerHTML = "<b>Your browser does not support WebSockets.</b>";
-    writeLog(item);
+    startWs();
   }
 };
 
@@ -153,4 +124,53 @@ let setEvents = () => {
     }
     return false;
   };
+};
+
+// connect to websocket
+let startWs = () => {
+  if (window["WebSocket"]) {
+    let protocol = window.location.protocol == "https" ? "wss" : "ws";
+    let wss =
+      `${protocol}://${window.location.host}` +
+      `/ws?room=${roomId}&user=${userId}`;
+
+    conn = new WebSocket(wss);
+    conn.onopen = () => {
+      openWsView();
+    };
+    conn.onclose = () => {
+      closeWsView(wsClosedMsg);
+    };
+    conn.onmessage = (ev) => {
+      rcvWsView(ev);
+    };
+  } else {
+    closeWsView(wsErrMsg);
+  }
+};
+
+let openWsView = () => {
+  console.log("You are connected!");
+};
+
+let closeWsView = (err) => {
+  let item = document.createElement("div");
+  item.classList.add("text-align-c");
+  item.innerHTML = `<br><b>${err}</b><br>`;
+  appendLog(item, log);
+};
+
+let rcvWsView = (ev) => {
+  let data = JSON.parse(ev.data);
+  let item = document.createElement("div");
+
+  item.innerHTML =
+    data.time == lastData.time && data.user == lastData.user
+      ? ""
+      : `<br><b>${data.user}</b> ` +
+        `<span class='font-size-s'>${data.time}</span><br>`;
+  item.innerHTML += `${data.body}`;
+
+  lastData = data;
+  appendLog(item);
 };

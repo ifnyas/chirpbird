@@ -1,10 +1,11 @@
 package main
 
 import (
-	"chirpbird/utils"
+	"chirpbird/router"
+	"chirpbird/wss"
 )
 
 func main() {
-	go utils.H.Run()
-	utils.RouterRun()
+	go wss.Init()
+	router.Run()
 }
