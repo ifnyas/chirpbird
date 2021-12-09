@@ -11,6 +11,7 @@ let lastData = {
 const promptUserMsg = "Sign in as:";
 const promptRoomMsg = "Join room: (blank to create a new one)";
 
+const wsConnectingMsg = "Connecting...";
 const wsOpenedMsg = "You are connected!";
 const wsClosedMsg = "Connection closed.";
 const wsErrMsg = "Your browser does not support WebSockets.";
@@ -102,6 +103,7 @@ let promptRoomId = () => {
     document.title = `#${roomId} - ChipBird IM`;
     btnRoom.innerHTML = `&#9998; <b>${roomId}</b>`;
     clearLog();
+    eventWsView(wsConnectingMsg);
     startWs();
   }
 };
@@ -139,24 +141,25 @@ let startWs = () => {
       openWsView();
     };
     conn.onclose = () => {
-      closeWsView(wsClosedMsg);
+      eventWsView(wsClosedMsg);
     };
     conn.onmessage = (ev) => {
       rcvWsView(ev);
     };
   } else {
-    closeWsView(wsErrMsg);
+    eventWsView(wsErrMsg);
   }
 };
 
 let openWsView = () => {
-  console.log("You are connected!");
+  conn.send(`<i>Joined the room!</i>`);
+  msg.disabled = false;
 };
 
-let closeWsView = (err) => {
+let eventWsView = (ev) => {
   let item = document.createElement("div");
   item.classList.add("text-align-c");
-  item.innerHTML = `<br><b>${err}</b><br>`;
+  item.innerHTML = `<br>${ev}<br>`;
   appendLog(item, log);
 };
 
