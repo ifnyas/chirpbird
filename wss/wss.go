@@ -2,7 +2,6 @@ package wss
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -65,7 +64,7 @@ var (
 )
 
 func Init() {
-	getPort()
+	getPort() // heroku doesn't support dynamic port
 	wsAltRoute()
 	H.Run()
 }
@@ -87,6 +86,11 @@ func getPort() {
 		log.Println(err.Error())
 	}
 	port = ":" + strconv.Itoa(freePort)
+	log.Println(port)
+
+	defer func() {
+		port = ":433"
+	}()
 }
 
 func WsProxy() gin.HandlerFunc {
@@ -103,7 +107,6 @@ func WsProxy() gin.HandlerFunc {
 			host = strings.Split(host, ":")[0]
 		}
 
-		fmt.Println(scheme, host, port)
 		director := func(req *http.Request) {
 			req.URL.Scheme = scheme
 			req.URL.Host = host + port
