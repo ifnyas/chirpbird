@@ -21,14 +21,7 @@ func Run() {
 	})
 
 	// ws port
-	/* heroku doesn't support dynamic port
 	r.GET("/ws", wss.WsProxy())
-	*/
-	r.GET("/ws", func(c *gin.Context) {
-		user := c.Query("user")
-		room := c.Query("room")
-		wss.ServeWs(c.Writer, c.Request, room, user)
-	})
 
 	// run
 	r.Run()

@@ -64,10 +64,8 @@ var (
 )
 
 func Init() {
-	/* heroku doesn't support dynamic port
 	getPort()
 	wsAltRoute()
-	*/
 	H.Run()
 }
 
