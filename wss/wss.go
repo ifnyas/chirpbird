@@ -60,44 +60,51 @@ var (
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 	}
-	port = ""
+	histories = []Message{}
+	port      = ""
 )
 
 func Init() {
 	/* heroku doesn't support dynamic port
-	getPort()
-	wsAltRoute()
+	if port == "" {
+		setPort()
+	}
+	createWsRoute()
 	*/
 	H.Run()
 }
 
-func wsAltRoute() {
-	r := gin.Default()
-	r.GET("/ws", func(c *gin.Context) {
-		user := c.Query("user")
-		room := c.Query("room")
-		ServeWs(c.Writer, c.Request, room, user)
-	})
-	go r.Run(port)
-}
-
-func getPort() {
+func setPort() {
 	freePort, err := GetFreePort()
 	if err != nil {
 		log.Println(err.Error())
 	}
 	port = ":" + strconv.Itoa(freePort)
-	log.Println(port)
+}
 
-	defer func() {
-		port = ":433"
-	}()
+func createWsRoute() {
+	r := gin.Default()
+
+	r.GET("/ws", func(c *gin.Context) {
+		ServeWs(c.Writer, c.Request, c.Query("key"))
+	})
+
+	r.GET("/history", func(c *gin.Context) {
+		roomHistories := LoadMsg(c.Query("room"))
+		array := []Response{}
+		for _, history := range roomHistories {
+			var res Response
+			json.Unmarshal(history.Data, &res)
+			array = append(array, res)
+		}
+		c.JSON(http.StatusOK, gin.H{"data": array})
+	})
+
+	go r.Run(port)
 }
 
 func WsProxy() gin.HandlerFunc {
-
 	return func(c *gin.Context) {
-
 		scheme := c.Request.URL.Scheme
 		if scheme == "" {
 			scheme = "http"
@@ -118,19 +125,6 @@ func WsProxy() gin.HandlerFunc {
 		proxy := &httputil.ReverseProxy{Director: director}
 		proxy.ServeHTTP(c.Writer, c.Request)
 	}
-}
-
-func GetFreePort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", ":0")
-	if err != nil {
-		return 0, err
-	}
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 func (h *Hub) Run() {
@@ -171,7 +165,7 @@ func (h *Hub) Run() {
 	}
 }
 
-func ServeWs(w http.ResponseWriter, r *http.Request, room string, user string) {
+func ServeWs(w http.ResponseWriter, r *http.Request, key string) {
 	upgrader.CheckOrigin = func(r *http.Request) bool {
 		return true
 	}
@@ -181,7 +175,7 @@ func ServeWs(w http.ResponseWriter, r *http.Request, room string, user string) {
 		return
 	}
 	c := &Connection{ws, make(chan []byte, 256)}
-	s := Subscription{c, room, user}
+	s := createSub(c, key)
 
 	H.Register <- s
 
@@ -193,6 +187,9 @@ func (s Subscription) readPump() {
 	c := s.Conn
 
 	defer func() {
+		// broadcast user is offline
+		broadcast(s, "<i>("+"is offline"+")</i>", false)
+
 		H.Unregister <- s
 		c.Ws.Close()
 	}()
@@ -204,6 +201,9 @@ func (s Subscription) readPump() {
 		return nil
 	})
 
+	// broadcast user is online
+	broadcast(s, "<i>("+"is online"+")</i>", false)
+
 	for {
 		_, msg, err := c.Ws.ReadMessage()
 		if err != nil {
@@ -212,11 +212,7 @@ func (s Subscription) readPump() {
 			}
 			break
 		}
-
-		msg = modMsg(msg, s.User)
-		m := Message{msg, s.Room}
-
-		H.Broadcast <- m
+		broadcast(s, string(msg), true)
 	}
 }
 
@@ -249,9 +245,56 @@ func (s *Subscription) writePump() {
 	}
 }
 
+func broadcast(s Subscription, msg string, toSave bool) {
+	firstMsg := modMsg([]byte(msg), s.User)
+	m := Message{firstMsg, s.Room}
+	H.Broadcast <- m
+
+	if toSave {
+		saveMsg(m)
+	}
+}
+
 func (c *Connection) write(mt int, payload []byte) error {
 	c.Ws.SetWriteDeadline(time.Now().Add(writeWait))
 	return c.Ws.WriteMessage(mt, payload)
+}
+
+func saveMsg(m Message) {
+	histories = append(histories, m)
+}
+
+func LoadMsg(room string) []Message {
+	selected := []Message{}
+	for _, history := range histories {
+		if history.Room == room {
+			selected = append(selected, history)
+		}
+	}
+	return selected
+}
+
+/*
+	Utils
+*/
+func createSub(c *Connection, key string) Subscription {
+	split := strings.SplitN(key, ":", 2)
+	room := split[0]
+	user := split[1]
+	return Subscription{c, room, user}
+}
+
+func GetFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 func modMsg(msg []byte, user string) []byte {

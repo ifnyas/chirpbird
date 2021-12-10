@@ -132,9 +132,7 @@ let setEvents = () => {
 let startWs = () => {
   if (window["WebSocket"]) {
     let protocol = window.location.protocol == "https:" ? "wss" : "ws";
-    let wss =
-      `${protocol}://${window.location.host}` +
-      `/ws?room=${roomId}&user=${userId}`;
+    let wss = `${protocol}://${window.location.host}/ws?key=${roomId}%3A${userId}`;
 
     conn = new WebSocket(wss);
     conn.onopen = () => {
@@ -144,15 +142,15 @@ let startWs = () => {
       eventWsView(wsClosedMsg);
     };
     conn.onmessage = (ev) => {
-      rcvWsView(ev);
+      rcvWsView(JSON.parse(ev.data));
     };
   } else {
     eventWsView(wsErrMsg);
   }
 };
 
-let openWsView = () => {
-  conn.send(`<i>Joined the room!</i>`);
+let openWsView = async () => {
+  await loadHistories();
   msg.disabled = false;
 };
 
@@ -163,10 +161,8 @@ let eventWsView = (ev) => {
   appendLog(item, log);
 };
 
-let rcvWsView = (ev) => {
-  let data = JSON.parse(ev.data);
+let rcvWsView = (data) => {
   let item = document.createElement("div");
-
   item.innerHTML =
     data.time == lastData.time && data.user == lastData.user
       ? ""
@@ -177,3 +173,12 @@ let rcvWsView = (ev) => {
   lastData = data;
   appendLog(item);
 };
+
+async function loadHistories() {
+  let url = `${window.location.protocol}/history?room=${roomId}`;
+  let obj = await (await fetch(url)).json();
+
+  obj.data.forEach((item) => {
+    rcvWsView(item);
+  });
+}

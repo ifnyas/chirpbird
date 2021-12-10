@@ -2,6 +2,7 @@ package router
 
 import (
 	"chirpbird/wss"
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,14 +21,19 @@ func Run() {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
 
-	// ws port
-	/* heroku doesn't support dynamic port
-	r.GET("/ws", wss.WsProxy())
-	*/
 	r.GET("/ws", func(c *gin.Context) {
-		user := c.Query("user")
-		room := c.Query("room")
-		wss.ServeWs(c.Writer, c.Request, room, user)
+		wss.ServeWs(c.Writer, c.Request, c.Query("key"))
+	})
+
+	r.GET("/history", func(c *gin.Context) {
+		roomHistories := wss.LoadMsg(c.Query("room"))
+		array := []wss.Response{}
+		for _, history := range roomHistories {
+			var res wss.Response
+			json.Unmarshal(history.Data, &res)
+			array = append(array, res)
+		}
+		c.JSON(http.StatusOK, gin.H{"data": array})
 	})
 
 	// run
