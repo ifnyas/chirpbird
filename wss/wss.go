@@ -185,7 +185,9 @@ func (s Subscription) readPump() {
 	c := s.Conn
 
 	defer func() {
+		// broadcast user is offline
 		broadcast(s, "<i>("+"is offline"+")</i>", false)
+
 		H.Unregister <- s
 		c.Ws.Close()
 	}()
@@ -197,7 +199,7 @@ func (s Subscription) readPump() {
 		return nil
 	})
 
-	// send notif if user is online
+	// broadcast user is online
 	broadcast(s, "<i>("+"is online"+")</i>", false)
 
 	for {
