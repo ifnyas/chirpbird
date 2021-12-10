@@ -133,8 +133,7 @@ let startWs = () => {
   if (window["WebSocket"]) {
     let protocol = window.location.protocol == "https:" ? "wss" : "ws";
     let wss =
-      `${protocol}://${window.location.host}` +
-      `/ws?room=${roomId}&user=${userId}`;
+      `${protocol}://${window.location.host}` + `/ws?key=${roomId}%3A${userId}`;
 
     conn = new WebSocket(wss);
     conn.onopen = () => {

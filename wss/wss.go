@@ -74,9 +74,7 @@ func Init() {
 func createWsRoute() {
 	r := gin.Default()
 	r.GET("/ws", func(c *gin.Context) {
-		user := c.Query("user")
-		room := c.Query("room")
-		ServeWs(c.Writer, c.Request, room, user)
+		ServeWs(c.Writer, c.Request, c.Query("key"))
 	})
 	go r.Run(port)
 }
@@ -165,7 +163,7 @@ func (h *Hub) Run() {
 	}
 }
 
-func ServeWs(w http.ResponseWriter, r *http.Request, room string, user string) {
+func ServeWs(w http.ResponseWriter, r *http.Request, key string) {
 	upgrader.CheckOrigin = func(r *http.Request) bool {
 		return true
 	}
@@ -175,12 +173,19 @@ func ServeWs(w http.ResponseWriter, r *http.Request, room string, user string) {
 		return
 	}
 	c := &Connection{ws, make(chan []byte, 256)}
-	s := Subscription{c, room, user}
+	s := createSub(c, key)
 
 	H.Register <- s
 
 	go s.writePump()
 	go s.readPump()
+}
+
+func createSub(c *Connection, key string) Subscription {
+	split := strings.SplitN(key, ":", 2)
+	room := split[0]
+	user := split[1]
+	return Subscription{c, room, user}
 }
 
 func (s Subscription) readPump() {
