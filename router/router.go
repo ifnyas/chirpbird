@@ -20,8 +20,9 @@ func Run() {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
 
-	// ws port
+	// wss
 	r.GET("/ws", wss.WsProxy())
+	r.GET("/history", wss.WsProxy())
 
 	// run
 	r.Run()

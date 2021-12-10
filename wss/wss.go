@@ -60,26 +60,19 @@ var (
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 	}
-	port = ""
+	histories = []Message{}
+	port      = ""
 )
 
 func Init() {
 	if port == "" {
-		getPort()
+		setPort()
 	}
 	createWsRoute()
 	H.Run()
 }
 
-func createWsRoute() {
-	r := gin.Default()
-	r.GET("/ws", func(c *gin.Context) {
-		ServeWs(c.Writer, c.Request, c.Query("key"))
-	})
-	go r.Run(port)
-}
-
-func getPort() {
+func setPort() {
 	freePort, err := GetFreePort()
 	if err != nil {
 		log.Println(err.Error())
@@ -87,8 +80,28 @@ func getPort() {
 	port = ":" + strconv.Itoa(freePort)
 }
 
-func WsProxy() gin.HandlerFunc {
+func createWsRoute() {
+	r := gin.Default()
 
+	r.GET("/ws", func(c *gin.Context) {
+		ServeWs(c.Writer, c.Request, c.Query("key"))
+	})
+
+	r.GET("/history", func(c *gin.Context) {
+		roomHistories := loadMsg(c.Query("room"))
+		array := []Response{}
+		for _, history := range roomHistories {
+			var res Response
+			json.Unmarshal(history.Data, &res)
+			array = append(array, res)
+		}
+		c.JSON(http.StatusOK, gin.H{"data": array})
+	})
+
+	go r.Run(port)
+}
+
+func WsProxy() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		scheme := c.Request.URL.Scheme
 		if scheme == "" {
@@ -110,19 +123,6 @@ func WsProxy() gin.HandlerFunc {
 		proxy := &httputil.ReverseProxy{Director: director}
 		proxy.ServeHTTP(c.Writer, c.Request)
 	}
-}
-
-func GetFreePort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", ":0")
-	if err != nil {
-		return 0, err
-	}
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 func (h *Hub) Run() {
@@ -181,17 +181,11 @@ func ServeWs(w http.ResponseWriter, r *http.Request, key string) {
 	go s.readPump()
 }
 
-func createSub(c *Connection, key string) Subscription {
-	split := strings.SplitN(key, ":", 2)
-	room := split[0]
-	user := split[1]
-	return Subscription{c, room, user}
-}
-
 func (s Subscription) readPump() {
 	c := s.Conn
 
 	defer func() {
+		broadcast(s, "<i>("+"is offline"+")</i>", false)
 		H.Unregister <- s
 		c.Ws.Close()
 	}()
@@ -203,6 +197,9 @@ func (s Subscription) readPump() {
 		return nil
 	})
 
+	// send notif if user is online
+	broadcast(s, "<i>("+"is online"+")</i>", false)
+
 	for {
 		_, msg, err := c.Ws.ReadMessage()
 		if err != nil {
@@ -211,11 +208,7 @@ func (s Subscription) readPump() {
 			}
 			break
 		}
-
-		msg = modMsg(msg, s.User)
-		m := Message{msg, s.Room}
-
-		H.Broadcast <- m
+		broadcast(s, string(msg), true)
 	}
 }
 
@@ -248,9 +241,56 @@ func (s *Subscription) writePump() {
 	}
 }
 
+func broadcast(s Subscription, msg string, toSave bool) {
+	firstMsg := modMsg([]byte(msg), s.User)
+	m := Message{firstMsg, s.Room}
+	H.Broadcast <- m
+
+	if toSave {
+		saveMsg(m)
+	}
+}
+
 func (c *Connection) write(mt int, payload []byte) error {
 	c.Ws.SetWriteDeadline(time.Now().Add(writeWait))
 	return c.Ws.WriteMessage(mt, payload)
+}
+
+func saveMsg(m Message) {
+	histories = append(histories, m)
+}
+
+func loadMsg(room string) []Message {
+	selected := []Message{}
+	for _, history := range histories {
+		if history.Room == room {
+			selected = append(selected, history)
+		}
+	}
+	return selected
+}
+
+/*
+	Utils
+*/
+func createSub(c *Connection, key string) Subscription {
+	split := strings.SplitN(key, ":", 2)
+	room := split[0]
+	user := split[1]
+	return Subscription{c, room, user}
+}
+
+func GetFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 func modMsg(msg []byte, user string) []byte {
