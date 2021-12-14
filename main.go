@@ -6,6 +6,6 @@ import (
 )
 
 func main() {
-	go wss.Init()
+	go wss.Init(0)
 	router.Run()
 }

@@ -150,7 +150,7 @@ let startWs = () => {
 };
 
 let openWsView = async () => {
-  await loadHistories();
+  await loadLogs();
   msg.disabled = false;
 };
 
@@ -174,8 +174,8 @@ let rcvWsView = (data) => {
   appendLog(item);
 };
 
-async function loadHistories() {
-  let url = `${window.location.protocol}/history?room=${roomId}`;
+async function loadLogs() {
+  let url = `${window.location.protocol}/logs?room=${roomId}`;
   let obj = await (await fetch(url)).json();
 
   obj.data.forEach((item) => {

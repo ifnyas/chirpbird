@@ -22,7 +22,7 @@ func Run() {
 
 	// wss
 	r.GET("/ws", wss.WsProxy())
-	r.GET("/history", wss.WsProxy())
+	r.GET("/log", wss.WsProxy())
 
 	// run
 	r.Run()
