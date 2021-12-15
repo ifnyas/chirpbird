@@ -1,7 +1,6 @@
 package chat
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -68,18 +67,14 @@ func request(part string, url string) string {
 		if url == "" {
 			url = "http"
 		}
-		fmt.Println("SSSCHEMEE", url)
 	case "host":
 		if strings.Contains(url, ":") {
 			url = strings.Split(url, ":")[0]
 		}
-		fmt.Println("HOOOSSSTT", url)
 	case "port":
 		url = healthyPort()
-		fmt.Println("POORRTT", url)
 	case "path":
 		url = "/chat" + url
-		fmt.Println("PAATTHH", url)
 	}
 	return url
 }

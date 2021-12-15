@@ -12,7 +12,7 @@ func Run() {
 	var r = gin.New()
 
 	// static
-	r.LoadHTMLGlob("static/*.html")
+	r.LoadHTMLGlob("./static/*.html")
 	r.Static("/static", "./static")
 
 	// index
