@@ -1,7 +1,7 @@
 package router
 
 import (
-	"chirpbird/wss"
+	"chirpbird/chat"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,7 +9,7 @@ import (
 
 func Run() {
 	// init
-	var r = gin.Default()
+	var r = gin.New()
 
 	// static
 	r.LoadHTMLGlob("static/*.html")
@@ -20,9 +20,8 @@ func Run() {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
 
-	// wss
-	r.GET("/ws", wss.WsProxy())
-	r.GET("/log", wss.WsProxy())
+	// chat
+	r.Any("/chat/*path", chat.Proxy())
 
 	// run
 	r.Run()

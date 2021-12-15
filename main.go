@@ -1,11 +1,11 @@
 package main
 
 import (
+	"chirpbird/chat"
 	"chirpbird/router"
-	"chirpbird/wss"
 )
 
 func main() {
-	go wss.Init(0)
+	go chat.Init(2)
 	router.Run()
 }

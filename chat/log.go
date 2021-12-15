@@ -1,4 +1,4 @@
-package wss
+package chat
 
 import (
 	"encoding/json"
@@ -7,20 +7,29 @@ import (
 
 var (
 	logsTemp = []Message{}
+	//queuesTemp = []Message{}
 )
 
 func saveMsg(m Message) {
 	logsTemp = append(logsTemp, m)
 }
 
-func loadMsg(room string) []Message {
+func loadMsg(room string) []Response {
 	selected := []Message{}
 	for _, log := range logsTemp {
 		if log.Room == room {
 			selected = append(selected, log)
 		}
 	}
-	return selected
+
+	array := []Response{}
+	for _, log := range selected {
+		var res Response
+		json.Unmarshal(log.Data, &res)
+		array = append(array, res)
+	}
+
+	return array
 }
 
 func modMsg(msg []byte, user string) []byte {

@@ -1,7 +1,7 @@
-package wss
+package chat
 
 func Init(n int) {
 	setPorts(n)
-	setRoute()
+	initRoute()
 	H.Run()
 }

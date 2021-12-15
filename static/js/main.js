@@ -132,7 +132,7 @@ let setEvents = () => {
 let startWs = () => {
   if (window["WebSocket"]) {
     let protocol = window.location.protocol == "https:" ? "wss" : "ws";
-    let wss = `${protocol}://${window.location.host}/ws?key=${roomId}%3A${userId}`;
+    let wss = `${protocol}://${window.location.host}/chat/ws?key=${roomId}%3A${userId}`;
 
     conn = new WebSocket(wss);
     conn.onopen = () => {
@@ -175,7 +175,7 @@ let rcvWsView = (data) => {
 };
 
 async function loadLogs() {
-  let url = `${window.location.protocol}/logs?room=${roomId}`;
+  let url = `${window.location.protocol}/chat/logs?room=${roomId}`;
   let obj = await (await fetch(url)).json();
 
   obj.data.forEach((item) => {

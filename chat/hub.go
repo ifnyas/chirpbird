@@ -1,4 +1,4 @@
-package wss
+package chat
 
 import (
 	"log"
@@ -15,6 +15,13 @@ var (
 		make(chan Message),
 		make(chan Subscription),
 		make(chan Subscription),
+	}
+	upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
 	}
 )
 
@@ -57,14 +64,6 @@ func (h *Hub) Run() {
 }
 
 func ServeWs(w http.ResponseWriter, r *http.Request, key string) {
-	upgrader := websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
-
-	upgrader.CheckOrigin = func(r *http.Request) bool {
-		return true
-	}
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
